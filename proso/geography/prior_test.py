@@ -1,0 +1,61 @@
+#  -*- coding: utf-8 -*-
+
+import proso.geography.environment as environment
+import proso.geography.model as model
+import proso.geography.prior as prior
+import unittest
+
+
+class TestBasics(unittest.TestCase):
+
+    def test_elo(self):
+        env = environment.InMemoryEnvironment()
+
+        self.answers_for_place(env, 1, 2, range(1, 20), [])
+        answer = {
+            'user_id': 100000,
+            'place_asked_id': 1,
+            'place_answered_id': 2,
+            'options': []
+        }
+        status, data = prior.elo_prepare(answer, env)
+        prediction = prior.elo_predict(answer, data)
+        self.assertGreater(0.1, prediction[0])
+
+        self.answers_for_place(env, 1, 1, range(21, 40), [])
+        answer = {
+            'user_id': 100000,
+            'place_asked_id': 1,
+            'place_answered_id': 2,
+            'options': []
+        }
+        status, data = prior.elo_prepare(answer, env)
+        prediction = prior.elo_predict(answer, data)
+        self.assertGreater(1, prediction[0])
+        self.assertLess(0.5, prediction[0])
+
+    def answers_for_place(self, env, place_asked_id, place_answered_id, users, options):
+        for user_id in users:
+            answer = {
+                'user_id': user_id,
+                'place_asked_id': place_asked_id,
+                'place_answered_id': place_answered_id,
+                'options': options
+            }
+            status, data = prior.elo_prepare(answer, env)
+            self.assertEqual(model.PHASE_PREDICT, status)
+            prediction = prior.elo_predict(answer, data)
+            prior.elo_update(answer, env, data, prediction)
+
+    def answers_for_user(self, env, user_id, to_ask, to_answer, options):
+        for place_asked_id, place_answered_id in zip(to_ask, to_answer):
+            answer = {
+                'user_id': user_id,
+                'place_asked_id': place_asked_id,
+                'place_answered_id': place_answered_id,
+                'options': options
+            }
+            status, data = prior.elo_prepare(answer, env)
+            self.assertEqual(model.PHASE_PREDICT, status)
+            prediction = prior.elo_predict(answer, data)
+            prior.elo_update(answer, env, data, prediction)

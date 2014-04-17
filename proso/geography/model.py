@@ -3,6 +3,10 @@
 import operator
 from math import exp
 
+PHASE_SKIP = 'PHASE_SKIP'
+PHASE_PREDICT = 'PHASE_PREDICT'
+PHASE_UPDATE = 'PHASE_UPDATE'
+
 
 def predict(skill_asked, option_skills):
     """
