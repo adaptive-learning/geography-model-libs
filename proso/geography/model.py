@@ -8,6 +8,47 @@ PHASE_PREDICT = 'PHASE_PREDICT'
 PHASE_UPDATE = 'PHASE_UPDATE'
 
 
+class AnswerStream:
+
+    def stream_answer(self, answer):
+        if not isinstance(answer, dict):
+            answer = answer.__dict__
+        env = self.environment()
+        prior_status, prior_data = self.prior_prepare(answer, env)
+        if prior_status != PHASE_SKIP:
+            prior_prediction = self.prior_predict(answer, prior_data)
+            if prior_status == PHASE_UPDATE:
+                self.prior_update(answer, env, prior_data, prior_prediction)
+                env.process_answer(answer['user_id'], answer['place_asked_id'], answer['inserted'])
+                return prior_prediction
+        current_status, current_data = self.current_prepare(answer, env)
+        current_prediction = self.current_predict(answer, current_data)
+        self.current_update(answer, env, current_data, current_prediction)
+        env.process_answer(answer['user_id'], answer['place_asked_id'], answer['inserted'])
+        return current_prediction
+
+    def current_prepare(self, answer, env):
+        raise NotImplementedError()
+
+    def current_predict(self, answer, data):
+        raise NotImplementedError()
+
+    def current_update(self, answer, env, data, prediction):
+        raise NotImplementedError()
+
+    def environment(self):
+        raise NotImplementedError()
+
+    def prior_prepare(self, answer, env):
+        raise NotImplementedError()
+
+    def prior_predict(self, answer, data):
+        raise NotImplementedError()
+
+    def prior_update(self, answer, env, data, prediction):
+        raise NotImplementedError()
+
+
 def predict(skill_asked, option_skills):
     """
     Returns the probability of correct answer.
