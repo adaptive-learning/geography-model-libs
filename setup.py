@@ -10,7 +10,7 @@ setup(
     description='Models library for PROSO Geography project',
     author='Jan Papousek',
     author_email='jan.papousek@gmail.com',
-    packages=['proso.geography'],
+    packages=['proso.geography', 'proso'],
     license='Gnu GPL v3',
     url='https://github.com/proso/geography-models-libs/',
 )
