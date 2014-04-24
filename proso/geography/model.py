@@ -49,6 +49,11 @@ class AnswerStream:
         raise NotImplementedError()
 
 
+def predict_simple(skill_asked, number_of_options):
+    guess = 0.0 if number_of_options else 1.0 / number_of_options
+    return guess + (1 - guess) * sigmoid(skill_asked)
+
+
 def predict(skill_asked, option_skills):
     """
     Returns the probability of correct answer.
