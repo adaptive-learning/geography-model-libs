@@ -13,9 +13,9 @@ class TestBasics(unittest.TestCase):
 
         self.answers_for_place(env, 1, 2, range(1, 20), [])
         answer = {
-            'user_id': 100000,
-            'place_asked_id': 1,
-            'place_answered_id': 2,
+            'user': 100000,
+            'place_asked': 1,
+            'place_answered': 2,
             'options': []
         }
         status, data = prior.elo_prepare(answer, env)
@@ -24,9 +24,9 @@ class TestBasics(unittest.TestCase):
 
         self.answers_for_place(env, 1, 1, range(21, 40), [])
         answer = {
-            'user_id': 100000,
-            'place_asked_id': 1,
-            'place_answered_id': 2,
+            'user': 100000,
+            'place_asked': 1,
+            'place_answered': 2,
             'options': []
         }
         status, data = prior.elo_prepare(answer, env)
@@ -37,9 +37,9 @@ class TestBasics(unittest.TestCase):
     def answers_for_place(self, env, place_asked_id, place_answered_id, users, options):
         for user_id in users:
             answer = {
-                'user_id': user_id,
-                'place_asked_id': place_asked_id,
-                'place_answered_id': place_answered_id,
+                'user': user_id,
+                'place_asked': place_asked_id,
+                'place_answered': place_answered_id,
                 'options': options
             }
             status, data = prior.elo_prepare(answer, env)
@@ -50,9 +50,9 @@ class TestBasics(unittest.TestCase):
     def answers_for_user(self, env, user_id, to_ask, to_answer, options):
         for place_asked_id, place_answered_id in zip(to_ask, to_answer):
             answer = {
-                'user_id': user_id,
-                'place_asked_id': place_asked_id,
-                'place_answered_id': place_answered_id,
+                'user': user_id,
+                'place_asked': place_asked_id,
+                'place_answered': place_answered_id,
                 'options': options
             }
             status, data = prior.elo_prepare(answer, env)

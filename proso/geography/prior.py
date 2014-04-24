@@ -3,8 +3,8 @@ from model import predict, PHASE_SKIP, PHASE_PREDICT, PHASE_UPDATE
 
 
 def elo_prepare(answer, env):
-    all_place_ids = [answer['place_asked_id']] + answer['options']
-    user_ids = [answer['user_id'] for i in all_place_ids]
+    all_place_ids = [answer['place_asked']] + answer['options']
+    user_ids = [answer['user'] for i in all_place_ids]
     is_not_first = env.have_answer(
         user_ids,
         all_place_ids)
@@ -15,9 +15,9 @@ def elo_prepare(answer, env):
         [None for i in all_place_ids],
         place_ids=all_place_ids
     )
-    user_first_answers_num = env.first_answers_num(answer['user_id'])
+    user_first_answers_num = env.first_answers_num(answer['user'])
     difficulties = env.difficulties(all_place_ids)
-    prior_skill = env.prior_skill(answer['user_id'])
+    prior_skill = env.prior_skill(answer['user'])
     current_skills = env.current_skills(
         user_ids,
         all_place_ids)
@@ -39,10 +39,10 @@ def elo_update(answer, env, data, prediction):
     alpha_fun = lambda n: ALPHA / (1 + DYNAMIC_ALPHA * n)
     prior_skill_alpha = alpha_fun(place_first_answers_nums[0])
     difficulty_alpha = alpha_fun(user_first_answers_num)
-    result = answer['place_asked_id'] == answer['place_answered_id']
+    result = answer['place_asked'] == answer['place_answered']
     env.prior_skill(
-        answer['user_id'],
+        answer['user'],
         prior_skill + prior_skill_alpha * (result - prediction[0]))
     env.difficulty(
-        answer['place_asked_id'],
+        answer['place_asked'],
         difficulties[0] - difficulty_alpha * (result - prediction[0]))

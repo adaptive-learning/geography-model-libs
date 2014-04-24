@@ -19,12 +19,12 @@ class AnswerStream:
             prior_prediction = self.prior_predict(answer, prior_data)
             if prior_status == PHASE_UPDATE:
                 self.prior_update(answer, env, prior_data, prior_prediction)
-                env.process_answer(answer['user_id'], answer['place_asked_id'], answer['inserted'])
+                env.process_answer(answer['user'], answer['place_asked'], answer['inserted'])
                 return prior_prediction
         current_status, current_data = self.current_prepare(answer, env)
         current_prediction = self.current_predict(answer, current_data)
         self.current_update(answer, env, current_data, current_prediction)
-        env.process_answer(answer['user_id'], answer['place_asked_id'], answer['inserted'])
+        env.process_answer(answer['user'], answer['place_asked'], answer['inserted'])
         return current_prediction
 
     def current_prepare(self, answer, env):
