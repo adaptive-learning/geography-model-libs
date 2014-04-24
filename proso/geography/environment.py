@@ -59,7 +59,6 @@ class InMemoryEnvironment(Environment):
         self._difficulty = {}
         self._prior_skill = {}
         self._records = {}
-        pass
 
     def current_skill(self, user_id, place_id, new_value=None):
         if new_value is not None:
