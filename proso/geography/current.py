@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from model import predict, PHASE_PREDICT
+from model import predict, predict_simple, PHASE_PREDICT
 
 
 def pfa_prepare(answer, env):
@@ -17,6 +17,11 @@ def pfa_prepare(answer, env):
 
 def pfa_predict(answer, data):
     current_skills, last_times = data
+    if 'number_of_options' in answer and answer['number_of_options'] != len(answer['options']):
+        # backward compatibility
+        return predict_simple(current_skills[0], answer['number_of_options'])
+    else:
+        return predict(current_skills[0], current_skills[1:])
     return predict(current_skills[0], current_skills[1:0])
 
 

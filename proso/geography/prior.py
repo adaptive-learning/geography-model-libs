@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from model import predict, PHASE_SKIP, PHASE_PREDICT, PHASE_UPDATE
+from model import predict, predict_simple, PHASE_SKIP, PHASE_PREDICT, PHASE_UPDATE
 
 
 def elo_prepare(answer, env):
@@ -29,7 +29,11 @@ def elo_prepare(answer, env):
 
 def elo_predict(answer, data):
     current_skills, difficulties, place_first_answers_nums, prior_skill, user_first_answers_num = data
-    return predict(current_skills[0], current_skills[1:])
+    if 'number_of_options' in answer and answer['number_of_options'] != len(answer['options']):
+        # backward compatibility
+        return predict_simple(current_skills[0], answer['number_of_options'])
+    else:
+        return predict(current_skills[0], current_skills[1:])
 
 
 def elo_update(answer, env, data, prediction):
