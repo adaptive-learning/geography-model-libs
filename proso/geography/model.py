@@ -17,8 +17,8 @@ class AnswerStream:
         prior_status, prior_data = self.prior_prepare(answer, env)
         if prior_status != PHASE_SKIP:
             prior_prediction = self.prior_predict(answer, prior_data)
-            if prior_status == PHASE_UPDATE:
-                self.prior_update(answer, env, prior_data, prior_prediction)
+            self.prior_update(answer, env, prior_data, prior_prediction)
+            if prior_status == PHASE_PREDICT:
                 env.process_answer(answer['user'], answer['place_asked'], answer['inserted'])
                 return prior_prediction
         current_status, current_data = self.current_prepare(answer, env)
