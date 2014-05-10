@@ -60,6 +60,15 @@ class InMemoryEnvironment(Environment):
         self._prior_skill = {}
         self._records = {}
 
+    def with_difficulty(self, difficulty):
+        self._difficulty = difficulty
+
+    def export_difficulty(self):
+        return self._difficulty
+
+    def export_prior_skill(self):
+        return self._prior_skill
+
     def current_skill(self, user_id, place_id, new_value=None):
         if new_value is not None:
             self._current_skill[user_id, place_id] = new_value
