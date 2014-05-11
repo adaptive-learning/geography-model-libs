@@ -20,12 +20,15 @@ class AnswerStream:
             self.prior_update(answer, env, prior_data, prior_prediction)
             if prior_status == PHASE_PREDICT:
                 env.process_answer(answer['user'], answer['place_asked'], answer['inserted'])
-                return prior_prediction
         current_status, current_data = self.current_prepare(answer, env)
         current_prediction = self.current_predict(answer, current_data)
-        self.current_update(answer, env, current_data, current_prediction)
+        if current_status != PHASE_SKIP:
+            self.current_update(answer, env, current_data, current_prediction)
         env.process_answer(answer['user'], answer['place_asked'], answer['inserted'])
-        return current_prediction
+        if prior_status == PHASE_PREDICT:
+            return prior_prediction
+        else:
+            return current_prediction
 
     def current_prepare(self, answer, env):
         raise NotImplementedError()
