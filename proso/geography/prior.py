@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-from model import predict, predict_simple, PHASE_SKIP, PHASE_PREDICT, PHASE_UPDATE
+from model import predict, predict_simple, PHASE_SKIP, PHASE_PREDICT
 
 
 def elo_prepare(answer, env):
     all_place_ids = [answer['place_asked']] + answer['options']
     user_ids = [answer['user'] for i in all_place_ids]
-    is_not_first = env.have_answer(
-        user_ids,
-        all_place_ids)
-    is_first = [not i for i in is_not_first]
-    if all(is_not_first):
+    [is_not_first] = env.have_answer(
+        [answer['user']],
+        [answer['place_asked']])
+    if is_not_first:
         return (PHASE_SKIP, None)
     place_first_answers_nums = env.first_answers_nums(
         [None for i in all_place_ids],
@@ -22,9 +21,7 @@ def elo_prepare(answer, env):
         user_ids,
         all_place_ids)
     data = (current_skills, difficulties, place_first_answers_nums, prior_skill, user_first_answers_num)
-    if is_first[0]:
-        return (PHASE_PREDICT, data)
-    return (PHASE_UPDATE, data)
+    return (PHASE_PREDICT, data)
 
 
 def elo_predict(answer, data):
