@@ -38,8 +38,8 @@ def elo_update(answer, env, data, prediction):
     ALPHA = 1.0
     DYNAMIC_ALPHA = 0.05
     alpha_fun = lambda n: ALPHA / (1 + DYNAMIC_ALPHA * n)
-    prior_skill_alpha = alpha_fun(place_first_answers_nums[0])
-    difficulty_alpha = alpha_fun(user_first_answers_num)
+    prior_skill_alpha = alpha_fun(user_first_answers_num)
+    difficulty_alpha = alpha_fun(place_first_answers_nums[0])
     result = answer['place_asked'] == answer['place_answered']
     env.prior_skill(
         answer['user'],
