@@ -100,7 +100,7 @@ class InMemoryEnvironment(Environment):
             zip(user_ids, place_ids))
 
     def flush(self):
-        self.flush_all(self._prior_skill, self._current_skill, self._difficulty)
+        return self.flush_all(self._prior_skill, self._current_skill, self._difficulty)
 
     def flush_all(self, prior_skill, current_skill, difficulty):
         pass
