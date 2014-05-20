@@ -43,11 +43,11 @@ class InMemory(unittest.TestCase):
         self.assertEqual(0, env.first_answers_num(user_id=1))
         self.assertEqual(0, env.first_answers_num(place_id=1))
         self.assertEqual(0, env.first_answers_num(1, 1))
-        env.process_answer(1, 1, None)
-        env.process_answer(1, 1, None)
-        env.process_answer(1, 2, None)
-        env.process_answer(1, 3, None)
-        env.process_answer(2, 1, None)
+        env.process_answer(1, 1, 1, None)
+        env.process_answer(1, 1, 1, None)
+        env.process_answer(1, 2, 2, None)
+        env.process_answer(1, 3, 3, None)
+        env.process_answer(2, 1, 1, None)
         self.assertEqual(3, env.first_answers_num(user_id=1))
         self.assertEqual(2, env.first_answers_num(place_id=1))
         self.assertEqual(1, env.first_answers_num(1, 1))
@@ -59,9 +59,9 @@ class InMemory(unittest.TestCase):
         self.assertIsNone(env.last_time(user_id=1))
         self.assertIsNone(env.last_time(place_id=1))
         self.assertIsNone(env.last_time(1, 1))
-        env.process_answer(1, 1, 1)
-        env.process_answer(1, 2, 2)
-        env.process_answer(2, 1, 3)
+        env.process_answer(1, 1, 1, 1)
+        env.process_answer(1, 2, 2, 2)
+        env.process_answer(2, 1, 1, 3)
         self.assertEqual(2, env.last_time(user_id=1))
         self.assertEqual(3, env.last_time(place_id=1))
         self.assertEqual(1, env.last_time(1, 1))
@@ -74,3 +74,28 @@ class InMemory(unittest.TestCase):
         self.assertEqual(
             [1, None],
             env.last_times(user_ids=[1, 1], place_ids=[1, 3]))
+
+    def test_confused_index(self):
+        # setup
+        env = environment.InMemoryEnvironment()
+        # tests
+        self.assertEqual([0, 0], env.confused_index(1, [2, 3]))
+        env.process_answer(1, 1, 2, 1)
+        env.process_answer(1, 1, 1, 2)
+        env.process_answer(1, 2, 1, 3)
+        env.process_answer(1, 1, 3, 4)
+        self.assertEqual([2, 1], env.confused_index(1, [2, 3]))
+
+    def test_rolling_success(self):
+        # setup
+        env = environment.InMemoryEnvironment()
+        # tests
+        self.assertEqual(1.0, env.rolling_success(1))
+        env.process_answer(1, 1, 2, 1)
+        env.process_answer(1, 1, 1, 2)
+        env.process_answer(1, 2, 1, 3)
+        env.process_answer(1, 1, 3, 4)
+        env.process_answer(2, 1, 2, 5)
+        env.process_answer(2, 1, 1, 6)
+        self.assertEqual(0.25, env.rolling_success(1))
+        self.assertEqual(0.5, env.rolling_success(2))
