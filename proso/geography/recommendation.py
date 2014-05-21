@@ -111,7 +111,7 @@ def adjust_target_probability(target, rolling_success):
 
 def _weighted_choices(choices, weights, n):
     if sum(weights) == 0:
-        return random.choice(choices)
+        return [random.choice(choices)]
     if n >= len(choices):
         return choices
     chosen = []
