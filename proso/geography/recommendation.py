@@ -2,6 +2,8 @@ import numpy.random as random
 import model
 import math
 import datetime
+from logging import getLogger
+LOGGER = getLogger(__name__)
 
 
 TARGET_PROBABILITY = 0.8
@@ -32,6 +34,7 @@ def by_additive_function(user_id, place_ids, env, n):
     target_prob = adjust_target_probability(
         TARGET_PROBABILITY,
         env.rolling_success(user_id))
+    LOGGER.debug('recommendation_by_additive_function, user: %s, target_probability %s', str(user_id), str(target_prob))
     seconds_ago = map(
         lambda x: (datetime.datetime.now() - x).total_seconds() if x is not None else 315360000,
         env.last_times(user_ids=user_ids, place_ids=place_ids))
@@ -43,10 +46,13 @@ def by_additive_function(user_id, place_ids, env, n):
     score_time = map(_by_additive_time_ago, seconds_ago)
     score_num = map(_by_additive_number_of_answers, nums_of_ans)
     score_prob = map(lambda x: _by_additive_prob_diff(target_prob, x), estimated)
-    score_total = map(
-        lambda (x, y, z): WEIGHT_TIME_AGO * x + WEIGHT_NUMBER_OF_ANSWERS * y + WEIGHT_PROBABILITY * z,
-        zip(score_time, score_num, score_prob))
-    targets = zip(*sorted(zip(score_total, place_ids), reverse=True))[1][:min(n, len(place_ids))]
+    targets_score = sorted(
+        zip(place_ids, score_time, score_num, score_prob),
+        reverse=True,
+        key=lambda (place, t, n, p): WEIGHT_TIME_AGO * t + WEIGHT_NUMBER_OF_ANSWERS * n + WEIGHT_PROBABILITY * p
+    )[:min(n, len(place_ids))]
+    LOGGER.debug('recommendation_by_additive_function, user: %s, chosen targets (place, secs ago, num of answers, est prob) %s', str(user_id), str(targets_score))
+    targets = zip(*targets_score)[0]
     targets_estimated = map(lambda i: estimated_dict[i], targets)
     t_user_ids = [user_id for i in targets]
     confused_indexes = map(lambda target: env.confused_index(target, place_ids), targets)
@@ -74,10 +80,20 @@ def _by_additive_prob_diff(expected, given):
 def _options(place_ids, question_target, target_prob, estimated_prob, has_answer, confused_indexes):
     num_of_options = _number_of_options(target_prob, estimated_prob, has_answer)
     conf_places = zip(confused_indexes, place_ids)
-    conf_places.sort()
+    conf_places.sort(reverse=True)
     conf_places = map(lambda (a, b): (b, a), conf_places)
     choices, weights = zip(*conf_places)
-    return _weighted_choices(choices, weights, num_of_options)
+    chosen = _weighted_choices(choices, weights, num_of_options)
+    LOGGER.debug(
+        'recommendation_options, target: %s, number of options: %s, target probability %s, estimated probability %s, confused_indexes: %s, chosen: %s',
+        str(question_target),
+        str(num_of_options),
+        str(target_prob),
+        str(estimated_prob),
+        str(conf_places[:min(10, len(conf_places))]),
+        str(chosen)
+        )
+    return chosen
 
 
 def _number_of_options(prob_target, prob_real, has_answer):
