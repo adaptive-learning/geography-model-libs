@@ -83,7 +83,7 @@ def _options(place_ids, question_target, target_prob, estimated_prob, has_answer
     conf_places.sort(reverse=True)
     conf_places = map(lambda (a, b): (b, a), conf_places)
     choices, weights = zip(*conf_places)
-    chosen = _weighted_choices(choices, weights, num_of_options)
+    chosen = _weighted_choices(choices, weights, num_of_options if num_of_options > 1 else 0)
     LOGGER.debug(
         'recommendation_options, target: %s, number of options: %s, target probability %s, estimated probability %s, confused_indexes: %s, chosen: %s',
         str(question_target),
