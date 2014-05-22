@@ -1,4 +1,5 @@
 import numpy.random as random
+import random as randomorig
 import model
 import math
 import datetime
@@ -128,9 +129,11 @@ def _weighted_choice(choices_with_weights):
         raise Exception("The list 'choices' can't be empty.")
     upto = 0
     total = sum(zip(*choices_with_weights)[1])
+    if total == 0:
+        return randomorig.choice(list(choices_with_weights))
     r = random.uniform(0, total)
     for c, w in choices_with_weights:
         if upto + w > r:
             return c, w
         upto += w
-    assert False, "Shouldn't get here"
+    assert False, "Shouldn't get here, r: " + str(r) + ", choices_with_weights: " + str(choices_with_weights)
