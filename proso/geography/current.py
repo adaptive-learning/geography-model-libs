@@ -17,6 +17,13 @@ def pfa_prepare(answer, env):
 
 def pfa_predict(answer, data):
     current_skills, last_times = data
+    TIME_SHIFT = 80.0
+    seconds_ago = map(
+        lambda x: (answer['inserted'] - x).total_seconds() if x is not None else 315360000,
+        last_times)
+    current_skills = map(
+        lambda (skill, secs): skill + TIME_SHIFT / max(secs, 0.001),
+        zip(current_skills, seconds_ago))
     if 'number_of_options' in answer and answer['number_of_options'] != len(answer['options']):
         # backward compatibility
         return model.predict_simple(current_skills[0], answer['number_of_options'])
