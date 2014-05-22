@@ -1,6 +1,7 @@
 import numpy.random as random
 import random as randomorig
 import model
+import current
 import math
 import datetime
 from logging import getLogger
@@ -48,9 +49,12 @@ def by_additive_function(user_id, place_ids, env, n, options_strategy=OPTIONS_NA
         lambda x: (datetime.datetime.now() - x).total_seconds() if x is not None else 315360000,
         env.last_times(user_ids=user_ids, place_ids=place_ids))
     nums_of_ans = env.answers_nums(user_ids=user_ids, place_ids=place_ids)
+    current_skills = map(
+        lambda (skill, secs): skill + current.TIME_SHIFT / secs,
+        zip(env.current_skills(user_ids=user_ids, place_ids=place_ids), seconds_ago))
     estimated = zip(*map(
         lambda skill: model.predict_simple(skill, 0),
-        env.current_skills(user_ids=user_ids, place_ids=place_ids)))[0]
+        current_skills))[0]
     estimated_dict = dict(zip(place_ids, estimated))
     score_time = map(_by_additive_time_ago, seconds_ago)
     score_num = map(_by_additive_number_of_answers, nums_of_ans)

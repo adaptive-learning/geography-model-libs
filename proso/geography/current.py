@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import model
 
+TIME_SHIFT = 80.0
+
 
 def pfa_prepare(answer, env):
     all_place_ids = [answer['place_asked']] + answer['options']
@@ -17,7 +19,6 @@ def pfa_prepare(answer, env):
 
 def pfa_predict(answer, data):
     current_skills, last_times = data
-    TIME_SHIFT = 80.0
     seconds_ago = map(
         lambda x: (answer['inserted'] - x).total_seconds() if x is not None else 315360000,
         last_times)
