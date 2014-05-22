@@ -7,33 +7,41 @@ from logging import getLogger
 LOGGER = getLogger(__name__)
 
 
+OPTIONS_RANDOM = 'options_random'
+OPTIONS_NAIVE = 'options_naive'
+
 TARGET_PROBABILITY = 0.8
 
 
-def by_random(user_id, place_ids, env, n):
+def by_random(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY):
     targets = random.choice(place_ids, size=n)
-    confused_indexes = map(lambda target: env.confused_index(target, place_ids), targets)
-    user_ids = [user_id for i in targets]
-    have_answer = env.have_answer(user_ids=user_ids, place_ids=targets)
-    target_prob = adjust_target_probability(
-        TARGET_PROBABILITY,
-        env.rolling_success(user_id))
-    estimated = zip(*map(
-        lambda skill: model.predict_simple(skill, 0),
-        env.current_skills(user_ids=user_ids, place_ids=targets)))[0]
-    return zip(targets, map(
-        lambda (t, e, h, c): _options(place_ids, t, target_prob, e, h, c),
-        zip(targets, estimated, have_answer, confused_indexes)))
+    if options_strategy == OPTIONS_RANDOM:
+        return zip(targets, map(lambda t: _options_random(place_ids), targets))
+    elif options_strategy == OPTIONS_NAIVE:
+        confused_indexes = map(lambda target: env.confused_index(target, place_ids), targets)
+        user_ids = [user_id for i in targets]
+        have_answer = env.have_answer(user_ids=user_ids, place_ids=targets)
+        target_prob = adjust_target_probability(
+            target_probability,
+            env.rolling_success(user_id))
+        estimated = zip(*map(
+            lambda skill: model.predict_simple(skill, 0),
+            env.current_skills(user_ids=user_ids, place_ids=targets)))[0]
+        return zip(targets, map(
+            lambda (t, e, h, c): _options_naive(place_ids, t, target_prob, e, h, c),
+            zip(targets, estimated, have_answer, confused_indexes)))
+    else:
+        raise Exception('unknown strategy for generating options:', options_strategy)
 
 
-def by_additive_function(user_id, place_ids, env, n):
+def by_additive_function(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY):
     WEIGHT_PROBABILITY = 10
     WEIGHT_NUMBER_OF_ANSWERS = 5
     WEIGHT_TIME_AGO = 120
 
     user_ids = [user_id for i in place_ids]
     target_prob = adjust_target_probability(
-        TARGET_PROBABILITY,
+        target_probability,
         env.rolling_success(user_id))
     LOGGER.debug('recommendation_by_additive_function, user: %s, target_probability %s', str(user_id), str(target_prob))
     seconds_ago = map(
@@ -54,13 +62,18 @@ def by_additive_function(user_id, place_ids, env, n):
     )[:min(n, len(place_ids))]
     LOGGER.debug('recommendation_by_additive_function, user: %s, chosen targets (place, secs ago, num of answers, est prob) %s', str(user_id), str(targets_score))
     targets = zip(*targets_score)[0]
-    targets_estimated = map(lambda i: estimated_dict[i], targets)
-    t_user_ids = [user_id for i in targets]
-    confused_indexes = map(lambda target: env.confused_index(target, place_ids), targets)
-    have_answer = env.have_answer(user_ids=t_user_ids, place_ids=targets)
-    return zip(targets, map(
-        lambda (t, e, h, c): _options(place_ids, t, target_prob, e, h, c),
-        zip(targets, targets_estimated, have_answer, confused_indexes)))
+    if options_strategy == OPTIONS_RANDOM:
+        return zip(targets, map(lambda t: _options_random(place_ids), targets))
+    elif options_strategy == OPTIONS_NAIVE:
+        targets_estimated = map(lambda i: estimated_dict[i], targets)
+        t_user_ids = [user_id for i in targets]
+        confused_indexes = map(lambda target: env.confused_index(target, place_ids), targets)
+        have_answer = env.have_answer(user_ids=t_user_ids, place_ids=targets)
+        return zip(targets, map(
+            lambda (t, e, h, c): _options_naive(place_ids, t, target_prob, e, h, c),
+            zip(targets, targets_estimated, have_answer, confused_indexes)))
+    else:
+        raise Exception('unknown strategy for generating options:', options_strategy)
 
 
 def _by_additive_time_ago(seconds_ago):
@@ -78,7 +91,12 @@ def _by_additive_prob_diff(expected, given):
     return 1 - normed_diff
 
 
-def _options(place_ids, question_target, target_prob, estimated_prob, has_answer, confused_indexes):
+def _options_random(place_ids):
+    num_options = random.randint(1, 6)
+    return randomorig.sample(place_ids, num_options - 1)
+
+
+def _options_naive(place_ids, question_target, target_prob, estimated_prob, has_answer, confused_indexes):
     num_of_options = _number_of_options(target_prob, estimated_prob, has_answer)
     conf_places = zip(confused_indexes, place_ids)
     conf_places.sort(reverse=True)
@@ -86,7 +104,7 @@ def _options(place_ids, question_target, target_prob, estimated_prob, has_answer
     choices, weights = zip(*conf_places)
     chosen = _weighted_choices(choices, weights, num_of_options if num_of_options > 1 else 0)
     LOGGER.debug(
-        'recommendation_options, target: %s, number of options: %s, target probability %s, estimated probability %s, confused_indexes: %s, chosen: %s',
+        'recommendation_options_naive, target: %s, number of options: %s, target probability %s, estimated probability %s, confused_indexes: %s, chosen: %s',
         str(question_target),
         str(num_of_options),
         str(target_prob),
