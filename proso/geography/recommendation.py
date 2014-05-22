@@ -15,6 +15,8 @@ TARGET_PROBABILITY = 0.8
 
 
 def by_random(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY):
+    if n <= 0:
+        return []
     targets = random.choice(place_ids, size=n)
     if options_strategy == OPTIONS_RANDOM:
         return zip(targets, map(lambda t: _options_random(place_ids), targets))
@@ -36,6 +38,8 @@ def by_random(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target
 
 
 def by_additive_function(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY):
+    if n <= 0:
+        return []
     WEIGHT_PROBABILITY = 10
     WEIGHT_NUMBER_OF_ANSWERS = 5
     WEIGHT_TIME_AGO = 120
@@ -91,7 +95,7 @@ def _by_additive_number_of_answers(n):
 def _by_additive_prob_diff(expected, given):
     diff = expected - given
     sign = 1 if diff > 0 else -1
-    normed_diff = abs(diff) / abs(expected - 0.5 + sign * 0.5)
+    normed_diff = abs(diff) / max(0.001, abs(expected - 0.5 + sign * 0.5))
     return 1 - normed_diff
 
 
