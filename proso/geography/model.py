@@ -1,6 +1,8 @@
 #  -*- coding: utf-8 -*-
 
 import operator
+import current
+import prior
 from math import exp
 
 PHASE_SKIP = 'PHASE_SKIP'
@@ -52,6 +54,33 @@ class AnswerStream:
 
     def prior_update(self, answer, env, data, prediction):
         raise NotImplementedError()
+
+
+class DefaultAnswerStream(AnswerStream):
+
+    def __init__(self, env):
+        self._env = env
+
+    def current_prepare(self, answer, env):
+        return current.pfa_prepare(answer, env)
+
+    def current_predict(self, answer, data):
+        return current.pfa_predict(answer, data)
+
+    def current_update(self, answer, env, data, prediction):
+        return current.pfa_update(answer, env, data, prediction)
+
+    def environment(self):
+        return self._env
+
+    def prior_prepare(self, answer, env):
+        return prior.elo_prepare(answer, env)
+
+    def prior_predict(self, answer, data):
+        return prior.elo_predict(answer, data)
+
+    def prior_update(self, answer, env, data, prediction):
+        return prior.elo_update(answer, env, data, prediction)
 
 
 def predict_simple(skill_asked, number_of_options):

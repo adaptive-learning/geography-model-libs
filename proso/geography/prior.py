@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from model import predict, predict_simple, PHASE_SKIP, PHASE_PREDICT
+import model
 
 
 def elo_prepare(answer, env):
@@ -9,7 +9,7 @@ def elo_prepare(answer, env):
         [answer['user']],
         [answer['place_asked']])
     if is_not_first:
-        return (PHASE_SKIP, None)
+        return (model.PHASE_SKIP, None)
     place_first_answers_nums = env.first_answers_nums(
         [None for i in all_place_ids],
         place_ids=all_place_ids
@@ -21,16 +21,16 @@ def elo_prepare(answer, env):
         user_ids,
         all_place_ids)
     data = (current_skills, difficulties, place_first_answers_nums, prior_skill, user_first_answers_num)
-    return (PHASE_PREDICT, data)
+    return (model.PHASE_PREDICT, data)
 
 
 def elo_predict(answer, data):
     current_skills, difficulties, place_first_answers_nums, prior_skill, user_first_answers_num = data
     if 'number_of_options' in answer and answer['number_of_options'] != len(answer['options']):
         # backward compatibility
-        return predict_simple(current_skills[0], answer['number_of_options'])
+        return model.predict_simple(current_skills[0], answer['number_of_options'])
     else:
-        return predict(current_skills[0], current_skills[1:])
+        return model.predict(current_skills[0], current_skills[1:])
 
 
 def elo_update(answer, env, data, prediction):

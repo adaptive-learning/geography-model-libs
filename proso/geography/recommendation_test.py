@@ -1,39 +1,10 @@
 #  -*- coding: utf-8 -*-
 
 import unittest
-import prior
-import current
 import proso.geography.environment as environment
 import model
 import datetime
 import recommendation
-
-
-class TestAnswerStream(model.AnswerStream):
-
-    def __init__(self, env):
-        self._env = env
-
-    def current_prepare(self, answer, env):
-        return current.pfa_prepare(answer, env)
-
-    def current_predict(self, answer, data):
-        return current.pfa_predict(answer, data)
-
-    def current_update(self, answer, env, data, prediction):
-        return current.pfa_update(answer, env, data, prediction)
-
-    def environment(self):
-        return self._env
-
-    def prior_prepare(self, answer, env):
-        return prior.elo_prepare(answer, env)
-
-    def prior_predict(self, answer, data):
-        return prior.elo_predict(answer, data)
-
-    def prior_update(self, answer, env, data, prediction):
-        return prior.elo_update(answer, env, data, prediction)
 
 
 class AbstractTest(unittest.TestCase):
@@ -47,7 +18,7 @@ class AbstractTest(unittest.TestCase):
         if recommend_fun is None:
             return
         env = environment.InMemoryEnvironment()
-        stream = TestAnswerStream(env)
+        stream = model.DefaultAnswerStream(env)
         self.prepare_stream(stream)
 
         # test
@@ -92,7 +63,7 @@ class AdditiveTest(AbstractTest):
         # setup
         recommend_fun = self.recommend_fun()
         env = environment.InMemoryEnvironment()
-        stream = TestAnswerStream(env)
+        stream = model.DefaultAnswerStream(env)
         self.prepare_stream(stream)
 
         # test
