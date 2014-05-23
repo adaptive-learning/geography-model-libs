@@ -125,7 +125,7 @@ def _options_naive(place_ids, question_target, target_prob, estimated_prob, has_
 
 def _number_of_options(prob_target, prob_real, has_answer):
     round_fun = round if has_answer else math.floor
-    g = min(0.5, max(0, prob_target - prob_real) / (1 - prob_real))
+    g = min(0.5, max(0, prob_target - prob_real) / max(0.001, 1 - prob_real))
     k = round_fun(1.0 / g) if g != 0 else 1
     return 1 if k > 6 else k
 
