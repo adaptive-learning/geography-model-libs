@@ -132,7 +132,7 @@ def _number_of_options(prob_target, prob_real, has_answer):
 
 def adjust_target_probability(target, rolling_success):
     norm = 1 - target if rolling_success > target else target
-    correction = ((target - rolling_success) / norm) * (1 - norm)
+    correction = ((target - rolling_success) / max(0.001, norm)) * (1 - norm)
     return target + correction
 
 
