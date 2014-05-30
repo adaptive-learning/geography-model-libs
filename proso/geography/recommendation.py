@@ -110,7 +110,7 @@ def _options_naive(place_ids, question_target, target_prob, estimated_prob, has_
     conf_places.sort(reverse=True)
     conf_places = map(lambda (a, b): (b, a), conf_places)
     choices, weights = zip(*conf_places)
-    chosen = _weighted_choices(choices, weights, num_of_options if num_of_options > 1 else 0)
+    chosen = _weighted_choices(choices, weights, num_of_options)
     LOGGER.debug(
         'recommendation_options_naive, target: %s, number of options: %s, target probability %s, estimated probability %s, confused_indexes: %s, chosen: %s',
         str(question_target),
@@ -127,7 +127,7 @@ def _number_of_options(prob_target, prob_real, has_answer):
     round_fun = round if has_answer else math.floor
     g = min(0.5, max(0, prob_target - prob_real) / max(0.001, 1 - prob_real))
     k = round_fun(1.0 / g) if g != 0 else 1
-    return 1 if k > 6 else k
+    return 0 if (k > 6 or k == 0) else (k - 1)
 
 
 def adjust_target_probability(target, rolling_success):
