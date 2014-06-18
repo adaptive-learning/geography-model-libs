@@ -48,7 +48,11 @@ def by_additive_function(user_id, place_ids, env, n, options_strategy=OPTIONS_NA
     target_prob = adjust_target_probability(
         target_probability,
         env.rolling_success(user_id))
-    LOGGER.debug('recommendation_by_additive_function, user: %s, target_probability %s', str(user_id), str(target_prob))
+    LOGGER.debug(
+        'recommendation_by_additive_function, user: %s, target_probability %s, requested_target_probability %s',
+        str(user_id),
+        str(target_prob),
+        str(target_probability))
     seconds_ago = map(
         lambda x: (datetime.datetime.now() - x).total_seconds() if x is not None else 315360000,
         env.last_times(user_ids=user_ids, place_ids=place_ids))
