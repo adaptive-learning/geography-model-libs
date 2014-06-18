@@ -24,15 +24,12 @@ class AbstractTest(unittest.TestCase):
         # test
         recommended = recommend_fun(0, range(100), env, 10)
         for target, options in recommended:
-            skill = env.current_skill(0, target)
-            prediction_alone = model.predict_simple(skill, 0)[0]
-            if prediction_alone < 0.5:
-                self.assertEqual(len(options), 2)
-            elif prediction_alone > 0.9:
-                self.assertEqual(len(options), 0)
+            skills = env.current_skills([0 for i in range(len(options) + 1)], [target] + options)
+            prediction = model.predict(skills[0], skills[1:])[0]
+            if env.rolling_success(0) < 0.5:
+                self.assertGreater(prediction, 0.5)
             else:
-                self.assertGreater(len(options), 1)
-                self.assertLess(len(options), 7)
+                self.assertLess(prediction, 0.5)
 
     def prepare_stream(self, stream):
         user_ids = range(100)
