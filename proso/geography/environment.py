@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import abc
 
 
 class Environment:
@@ -7,59 +8,109 @@ class Environment:
     This class encapsulates environment for the purpose of modelling.
     """
 
-    def answers_num(self, user_id=None, place_id=None):
-        raise NotImplementedError()
+    __metaclass__ = abc.ABCMeta
 
-    def answers_nums(self, user_ids, place_ids):
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def process_answer(self, user_id, place_asked_id, place_answered_id, response_time, time):
+        """
+        This method is used during the answer streaming and is called after the
+        predictive model for each answer.
 
-    def confused_index(self, place_id, place_ids):
-        raise NotImplementedError()
-
-    def current_skill(self, user_id, place_id, new_value=None):
-        raise NotImplementedError()
-
-    def current_skills(self, user_id, place_ids):
-        raise NotImplementedError()
-
-    def difficulties(self, place_ids):
-        raise NotImplementedError()
-
-    def difficulty(self, place_id, new_value=None):
-        raise NotImplementedError()
-
-    def first_answers_num(self, user_id=None, place_id=None):
-        raise NotImplementedError()
-
-    def first_answers_nums(self, user_ids, place_ids):
-        raise NotImplementedError()
+        Args:
+            user_id (int):
+                identifier of ther user answering the question
+            place_asked_id (int):
+                identifier of the asked place
+            place_answered_id (int):
+                identifier of the answered place or None if the user answered
+                "I don't know"
+            response_time (int)
+                time the answer took in milliseconds
+            time (datetime.datetime)
+                time when the user answered the question
+        """
+        return
 
     def flush(self):
-        raise NotImplementedError()
+        """
+        This method is called to enforce persistence of the data. This is
+        useful mainly for interaction with database where it is not efficient
+        to touch database for each answer. When your environment is only an in
+        memery implementation, you can leave this method as it is.
+        """
+        pass
 
+
+class CommonEnvironment:
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def answers_num(self, user_id=None, place_id=None):
+        return
+
+    @abc.abstractmethod
+    def answers_nums(self, user_ids, place_ids):
+        return
+
+    @abc.abstractmethod
+    def confused_index(self, place_id, place_ids):
+        return
+
+    @abc.abstractmethod
+    def current_skill(self, user_id, place_id, new_value=None):
+        return
+
+    @abc.abstractmethod
+    def current_skills(self, user_id, place_ids):
+        return
+
+    @abc.abstractmethod
+    def difficulties(self, place_ids):
+        return
+
+    @abc.abstractmethod
+    def difficulty(self, place_id, new_value=None):
+        return
+
+    @abc.abstractmethod
+    def first_answers_num(self, user_id=None, place_id=None):
+        return
+
+    @abc.abstractmethod
+    def first_answers_nums(self, user_ids, place_ids):
+        return
+
+    @abc.abstractmethod
     def has_answer(self, user_id=None, place_id=None):
-        raise NotImplementedError()
+        return
 
+    @abc.abstractmethod
     def have_answer(self, user_ids, place_ids):
-        raise NotImplementedError()
+        return
 
+    @abc.abstractmethod
     def prior_skill(self, user_id, new_value=None):
-        raise NotImplementedError()
+        return
 
-    def process_answer(self, user_id, place_asked_id, place_answered_id, time):
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def process_answer(self, user_id, place_asked_id, place_answered_id, response_time, time):
+        return
 
+    @abc.abstractmethod
     def last_time(self, user_id=None, place_id=None):
-        raise NotImplementedError()
+        return
 
+    @abc.abstractmethod
     def last_times(self, user_ids, place_ids):
-        raise NotImplementedError()
+        return
 
+    @abc.abstractmethod
     def rolling_success(self, user_id):
-        raise NotImplementedError()
+        return
 
 
-class InMemoryEnvironment(Environment):
+class InMemoryEnvironment(CommonEnvironment):
 
     _EMPTY_RECORD = {
         'first_answers_num': 0,
@@ -151,7 +202,7 @@ class InMemoryEnvironment(Environment):
     def prior_skills(self, user_ids):
         return map(self.prior_skill, user_ids)
 
-    def process_answer(self, user_id, place_asked_id, place_answered_id, time):
+    def process_answer(self, user_id, place_asked_id, place_answered_id, response_time, time):
         is_first = not self.has_answer(user_id=user_id, place_id=place_asked_id)
         update_num = 1 if is_first else 0
         record_both = self._record(user_id=user_id, place_id=place_asked_id)

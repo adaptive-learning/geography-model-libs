@@ -28,6 +28,7 @@ class AnswerStream:
             answer['user'],
             answer['place_asked'],
             answer['place_answered'],
+            answer['response_time'],
             answer['inserted'])
         if prior_status == PHASE_PREDICT:
             return prior_prediction

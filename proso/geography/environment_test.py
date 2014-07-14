@@ -1,6 +1,7 @@
 #  -*- coding: utf-8 -*-
 
 import unittest
+import datetime
 import proso.geography.environment as environment
 
 
@@ -43,11 +44,11 @@ class InMemory(unittest.TestCase):
         self.assertEqual(0, env.first_answers_num(user_id=1))
         self.assertEqual(0, env.first_answers_num(place_id=1))
         self.assertEqual(0, env.first_answers_num(1, 1))
-        env.process_answer(1, 1, 1, None)
-        env.process_answer(1, 1, 1, None)
-        env.process_answer(1, 2, 2, None)
-        env.process_answer(1, 3, 3, None)
-        env.process_answer(2, 1, 1, None)
+        env.process_answer(1, 1, 1, 1000, datetime.datetime.now())
+        env.process_answer(1, 1, 1, 1000, datetime.datetime.now())
+        env.process_answer(1, 2, 2, 1000, datetime.datetime.now())
+        env.process_answer(1, 3, 3, 1000, datetime.datetime.now())
+        env.process_answer(2, 1, 1, 1000, datetime.datetime.now())
         self.assertEqual(3, env.first_answers_num(user_id=1))
         self.assertEqual(2, env.first_answers_num(place_id=1))
         self.assertEqual(1, env.first_answers_num(1, 1))
@@ -59,20 +60,23 @@ class InMemory(unittest.TestCase):
         self.assertIsNone(env.last_time(user_id=1))
         self.assertIsNone(env.last_time(place_id=1))
         self.assertIsNone(env.last_time(1, 1))
-        env.process_answer(1, 1, 1, 1)
-        env.process_answer(1, 2, 2, 2)
-        env.process_answer(2, 1, 1, 3)
-        self.assertEqual(2, env.last_time(user_id=1))
-        self.assertEqual(3, env.last_time(place_id=1))
-        self.assertEqual(1, env.last_time(1, 1))
+        one = datetime.datetime(year=2014, month=2, day=1, hour=1, minute=2, second=1)
+        two = datetime.datetime(year=2014, month=2, day=1, hour=1, minute=2, second=2)
+        three = datetime.datetime(year=2014, month=2, day=1, hour=1, minute=2, second=3)
+        env.process_answer(1, 1, 1, 1000, one)
+        env.process_answer(1, 2, 2, 1000, two)
+        env.process_answer(2, 1, 1, 1000, three)
+        self.assertEqual(two, env.last_time(user_id=1))
+        self.assertEqual(three, env.last_time(place_id=1))
+        self.assertEqual(one, env.last_time(1, 1))
         self.assertEqual(
-            [2, 3, None],
+            [two, three, None],
             env.last_times(user_ids=[1, 2, 0]))
         self.assertEqual(
-            [3, 2, None],
+            [three, two, None],
             env.last_times(place_ids=[1, 2, 0]))
         self.assertEqual(
-            [1, None],
+            [one, None],
             env.last_times(user_ids=[1, 1], place_ids=[1, 3]))
 
     def test_confused_index(self):
@@ -80,10 +84,10 @@ class InMemory(unittest.TestCase):
         env = environment.InMemoryEnvironment()
         # tests
         self.assertEqual([0, 0], env.confused_index(1, [2, 3]))
-        env.process_answer(1, 1, 2, 1)
-        env.process_answer(1, 1, 1, 2)
-        env.process_answer(1, 2, 1, 3)
-        env.process_answer(1, 1, 3, 4)
+        env.process_answer(1, 1, 2, 1000, datetime.datetime.now())
+        env.process_answer(1, 1, 1, 1000, datetime.datetime.now())
+        env.process_answer(1, 2, 1, 1000, datetime.datetime.now())
+        env.process_answer(1, 1, 3, 1000, datetime.datetime.now())
         self.assertEqual([2, 1], env.confused_index(1, [2, 3]))
 
     def test_rolling_success(self):
@@ -91,11 +95,11 @@ class InMemory(unittest.TestCase):
         env = environment.InMemoryEnvironment()
         # tests
         self.assertEqual(1.0, env.rolling_success(1))
-        env.process_answer(1, 1, 2, 1)
-        env.process_answer(1, 1, 1, 2)
-        env.process_answer(1, 2, 1, 3)
-        env.process_answer(1, 1, 3, 4)
-        env.process_answer(2, 1, 2, 5)
-        env.process_answer(2, 1, 1, 6)
+        env.process_answer(1, 1, 2, 1000, datetime.datetime.now())
+        env.process_answer(1, 1, 1, 1000, datetime.datetime.now())
+        env.process_answer(1, 2, 1, 1000, datetime.datetime.now())
+        env.process_answer(1, 1, 3, 1000, datetime.datetime.now())
+        env.process_answer(2, 1, 2, 1000, datetime.datetime.now())
+        env.process_answer(2, 1, 1, 1000, datetime.datetime.now())
         self.assertEqual(0.25, env.rolling_success(1))
         self.assertEqual(0.5, env.rolling_success(2))
