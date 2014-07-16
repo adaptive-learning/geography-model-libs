@@ -1,5 +1,6 @@
 #  -*- coding: utf-8 -*-
 
+import abc
 import operator
 import current
 import prior
@@ -10,78 +11,275 @@ PHASE_PREDICT = 'PHASE_PREDICT'
 PHASE_UPDATE = 'PHASE_UPDATE'
 
 
+class PredictiveModel:
+
+    """
+    This class handles handles the logic behind the predictive models, which is
+    divided into 3 phases:
+        prepare:
+            the model loads the necessary data from the environment
+        predict
+            the model uses the loaded data to predict the correctness of the answer
+        update
+            the model updates environment to persist it for the future prediction
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def prepare(self, user_id, place_asked_id, options, question_type, inserted, environment):
+        """
+        In this phase, the predictive model touches the environment, loads all
+        necessary data and returns it.
+
+        Args:
+            user_id (int):
+                identifier of the user answering the question
+            place_asked_id (int):
+                identifier of the asked place
+            options (list):
+                list of identifier for the options (the asked place included),
+                if there is no option, the question is open
+            question_type (int):
+                type of the question: (1) find the given place on the map; (2)
+                pick the name for the highlighted place
+            inserted (datetime.datetime):
+                datetime when the question is answered
+            environment (proso.geography.environment.Environment):
+                environment where all the important data are persist
+
+        Returns:
+            object
+        """
+        return
+
+    @abc.abstractmethod
+    def predict(self, user_id, place_asked_id, options, question_type, inserted, data):
+        """
+        Uses the data from prepare phase and tries to predict the probability
+        of the correct answer. That means the prediction for the user and the
+        asked place before the given answer is processed.
+
+        Args:
+            user_id (int):
+                identifier of the user answering the question
+            place_asked_id (int):
+                identifier of the asked place
+            options (list):
+                list of identifier for the options (the asked place included),
+                if there is no option, the question is open
+            question_type (int):
+                type of the question: (1) find the given place on the map; (2)
+                pick the name for the highlighted place
+            inserted (datetime.datetime):
+                datetime when the question is answered
+            data (object):
+                data from the prepare phase
+
+        Returns:
+            float:
+                the number from [0, 1] representing the probability of the
+                correct answer
+        """
+        return
+
+    @abc.abstractmethod
+    def update(self, answer, environment, data, prediction):
+        """
+        After the prediction update the environment and persist some
+        information for the predictive model.
+
+        Args:
+            answer (dict):
+                dict-like structure representing the answer
+            environment (proso.geography.environment.Environment):
+                environment where all the important data are persist
+            data (object):
+                data from the prepare phase
+            prediction (float):
+                the number from [0, 1] representing the probability of the
+                correct answer
+        """
+        return
+
+
 class AnswerStream:
 
+    """
+    This class handles stream of answer for the purpose of the predictive
+    models.
+    """
+
+    def __init__(self, predictive_model, environment):
+        self._predictive_model = predictive_model
+        self._environment = environment
+
     def stream_answer(self, answer):
+        """
+        Handles one answer of the stream. Answer is represented as a dict-like
+        structure.
+
+        Args:
+            answer (dict):
+                dict-like structure with the following keys: user, place_asked,
+                place_answered, response_time, inserted
+
+        Returns:
+            float: prediction of the correctness for the given answer
+        """
         if not isinstance(answer, dict):
             answer = answer.__dict__
         env = self.environment()
-        prior_status, prior_data = self.prior_prepare(answer, env)
-        if prior_status != PHASE_SKIP:
-            prior_prediction = self.prior_predict(answer, prior_data)
-            self.prior_update(answer, env, prior_data, prior_prediction)
-        current_status, current_data = self.current_prepare(answer, env)
-        current_prediction = self.current_predict(answer, current_data)
-        if current_status != PHASE_SKIP:
-            self.current_update(answer, env, current_data, current_prediction)
+        data = self.predictive_model().prepare(
+            answer['user'],
+            answer['place_asked'],
+            answer['options'],
+            answer['question_type'],
+            answer['inserted'],
+            env)
+        prediction = self.predictive_model().predict(
+            answer['user'],
+            answer['place_asked'],
+            answer['options'],
+            answer['question_type'],
+            answer['inserted'], data)
+        self.predictive_model().update(
+            answer, env, data, prediction)
         env.process_answer(
             answer['user'],
             answer['place_asked'],
             answer['place_answered'],
             answer['response_time'],
             answer['inserted'])
-        if prior_status == PHASE_PREDICT:
-            return prior_prediction
+        return prediction
+
+    @abc.abstractmethod
+    def environment(self):
+        """
+        Returns an environment used by the stream.
+
+        Returns:
+            proso.geography.environment.Environment
+        """
+        return self._environment
+
+    @abc.abstractmethod
+    def predictive_model(self):
+        """
+        Returns a predictive models used by the stream
+
+        Returns:
+            proso.geography.model.PredictiveModel
+        """
+        return self._predictive_model
+
+
+class PriorCurrentModel (PredictiveModel):
+
+    """
+    This model works with prior and current knowledge and both these components
+    are estimated by their own models.
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    def prepare(self, user_id, place_asked_id, options, question_type, inserted, environment):
+        prior_status, prior_data = self.prior_prepare(
+            user_id,
+            place_asked_id,
+            options,
+            question_type,
+            inserted,
+            environment)
+        current_status, current_data = self.current_prepare(
+            user_id,
+            place_asked_id,
+            options,
+            question_type,
+            inserted,
+            environment)
+        current_predict = self.current_predict(
+            user_id,
+            place_asked_id,
+            options,
+            question_type,
+            inserted,
+            current_data)
+        if prior_status == PHASE_SKIP:
+            prior_predict = None
         else:
-            return current_prediction
+            prior_predict = self.prior_predict(
+                user_id,
+                place_asked_id,
+                options,
+                question_type,
+                inserted,
+                prior_data)
+        return {
+            'prior_status': prior_status,
+            'prior_data': prior_data,
+            'prior_predict': prior_predict,
+            'current_status': current_status,
+            'current_data': current_data,
+            'current_predict': current_predict
+        }
 
-    def current_prepare(self, answer, env):
-        raise NotImplementedError()
+    def predict(self, user_id, place_asked_id, options, question_type, inserted, data):
+        if data['prior_status'] == PHASE_PREDICT:
+            return data['prior_predict']
+        else:
+            return data['current_predict']
 
-    def current_predict(self, answer, data):
-        raise NotImplementedError()
+    def update(self, answer, environment, data, prediction):
+        if data['prior_status'] != PHASE_SKIP:
+            self.prior_update(answer, environment, data['prior_data'], data['prior_predict'])
+        if data['current_status'] != PHASE_SKIP:
+            self.current_update(answer, environment, data['current_data'], data['current_predict'])
 
-    def current_update(self, answer, env, data, prediction):
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def prior_prepare(self, user_id, place_asked_id, options, question_type, inserted, env):
+        return
 
-    def environment(self):
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def prior_predict(self, user_id, place_asked_id, options, question_type, inserted, data):
+        return
 
-    def prior_prepare(self, answer, env):
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def prior_update(self, answer, environment, data, prediction):
+        return
 
-    def prior_predict(self, answer, data):
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def current_prepare(self, user_id, place_asked_id, options, question_type, inserted, env):
+        return
 
-    def prior_update(self, answer, env, data, prediction):
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def current_predict(self, user_id, place_asked_id, options, question_type, inserted, data):
+        return
+
+    @abc.abstractmethod
+    def current_update(self, answer, environment, data, prediction):
+        return
 
 
-class DefaultAnswerStream(AnswerStream):
+class DefaultModel(PriorCurrentModel):
 
-    def __init__(self, env):
-        self._env = env
+    def prior_prepare(self, user_id, place_asked_id, options, question_type, inserted, env):
+        return prior.elo_prepare(user_id, place_asked_id, options, question_type, inserted, env)
 
-    def current_prepare(self, answer, env):
-        return current.pfa_prepare(answer, env)
+    def prior_predict(self, user_id, place_asked_id, options, question_type, inserted, data):
+        return prior.elo_predict(user_id, place_asked_id, options, question_type, inserted, data)
 
-    def current_predict(self, answer, data):
-        return current.pfa_predict(answer, data)
+    def prior_update(self, answer, environment, data, prediction):
+        return prior.elo_update(answer, environment, data, prediction)
 
-    def current_update(self, answer, env, data, prediction):
-        return current.pfa_update(answer, env, data, prediction)
+    def current_prepare(self, user_id, place_asked_id, options, question_type, inserted, env):
+        return current.pfa_prepare(user_id, place_asked_id, options, question_type, inserted, env)
 
-    def environment(self):
-        return self._env
+    def current_predict(self, user_id, place_asked_id, options, question_type, inserted, data):
+        return current.pfa_predict(user_id, place_asked_id, options, question_type, inserted, data)
 
-    def prior_prepare(self, answer, env):
-        return prior.elo_prepare(answer, env)
-
-    def prior_predict(self, answer, data):
-        return prior.elo_predict(answer, data)
-
-    def prior_update(self, answer, env, data, prediction):
-        return prior.elo_update(answer, env, data, prediction)
+    def current_update(self, answer, environment, data, prediction):
+        return current.pfa_update(answer, environment, data, prediction)
 
 
 def predict_simple(skill_asked, number_of_options):

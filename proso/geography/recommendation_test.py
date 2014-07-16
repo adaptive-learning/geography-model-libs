@@ -18,7 +18,8 @@ class AbstractTest(unittest.TestCase):
         if recommend_fun is None:
             return
         env = environment.InMemoryEnvironment()
-        stream = model.DefaultAnswerStream(env)
+        predictive_model = model.DefaultModel()
+        stream = model.AnswerStream(predictive_model, env)
         self.prepare_stream(stream)
 
         # test
@@ -42,7 +43,8 @@ class AbstractTest(unittest.TestCase):
                     'place_answered': place_id + ((user_id + place_id) % 6),
                     'inserted': datetime.datetime.now() - datetime.timedelta(hours=12),
                     'response_time': 1000,
-                    'options': []
+                    'options': [],
+                    'question_type': 1
                 })
 
 
@@ -61,7 +63,8 @@ class AdditiveTest(AbstractTest):
         # setup
         recommend_fun = self.recommend_fun()
         env = environment.InMemoryEnvironment()
-        stream = model.DefaultAnswerStream(env)
+        predictive_model = model.DefaultModel()
+        stream = model.AnswerStream(predictive_model, env)
         self.prepare_stream(stream)
 
         # test
@@ -73,7 +76,8 @@ class AdditiveTest(AbstractTest):
             'place_answered': to_answer[0],
             'inserted': datetime.datetime.now(),
             'response_time': 1000,
-            'options': to_answer[1]
+            'options': to_answer[1],
+            'question_type': 1
         })
         recommend_after = recommend_fun(0, range(100), env, 10)
         self.assertNotEqual(recommend_after[0][0], recommended_before[0][0])
