@@ -44,7 +44,7 @@ class AbstractTest(unittest.TestCase):
                     'inserted': datetime.datetime.now() - datetime.timedelta(hours=12),
                     'response_time': 1000,
                     'options': [],
-                    'question_type': 1
+                    'type': 1
                 })
 
 
@@ -77,7 +77,7 @@ class AdditiveTest(AbstractTest):
             'inserted': datetime.datetime.now(),
             'response_time': 1000,
             'options': to_answer[1],
-            'question_type': 1
+            'type': 1
         })
         recommend_after = recommend_fun(0, range(100), env, 10)
         self.assertNotEqual(recommend_after[0][0], recommended_before[0][0])

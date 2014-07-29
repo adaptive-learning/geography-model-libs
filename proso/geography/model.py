@@ -134,14 +134,14 @@ class AnswerStream:
             answer['user'],
             answer['place_asked'],
             answer['options'],
-            answer['question_type'],
+            answer['type'],
             answer['inserted'],
             env)
         prediction = self.predictive_model().predict(
             answer['user'],
             answer['place_asked'],
             answer['options'],
-            answer['question_type'],
+            answer['type'],
             answer['inserted'], data)
         self.predictive_model().update(
             answer, env, data, prediction)
