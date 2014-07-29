@@ -41,6 +41,110 @@ class Environment:
         pass
 
 
+class InMemoryBasicEnvironment:
+
+    HAS_ANSWER = 'has_answer'
+    LAST_TIME = 'last_time'
+    NUMBER_OF_ANSWERS = 'number_of_answers'
+    NUMBER_OF_FIRST_ANSWERS = 'number_of_first_answers'
+    ROLLING_SUCCESS = 'rolling_success'
+
+    def __init__(self, rolling_window=10):
+        self._state = {}
+        self._rolling_window = rolling_window
+
+    def process_answer(self, user_id, place_asked_id, place_answered_id, response_time, time):
+        increment = lambda x: x + 1
+        if not self.has_answer(user_id=user_id, place_id=place_asked_id):
+            self.update_both(
+                InMemoryBasicEnvironment.NUMBER_OF_FIRST_ANSWERS,
+                0,
+                increment,
+                user_id=user_id,
+                place_id=place_asked_id)
+        self.write_all(
+            InMemoryBasicEnvironment.LAST_TIME,
+            time,
+            user_id=user_id,
+            place_id=place_asked_id)
+        self.write_all(
+            InMemoryBasicEnvironment.HAS_ANSWER,
+            True,
+            user_id=user_id,
+            place_id=place_asked_id)
+        self.update_all(
+            InMemoryBasicEnvironment.NUMBER_OF_ANSWERS,
+            0,
+            increment,
+            user_id=user_id,
+            place_id=place_asked_id)
+        self.update_all(
+            InMemoryBasicEnvironment.ROLLING_SUCCESS,
+            [],
+            lambda x: self._update_rolling_success(x, place_asked_id == place_answered_id),
+            user_id=user_id,
+            place_id=place_asked_id)
+
+    def flush(self):
+        pass
+
+    def read(self, key, user_id=None, place_id=None, default=None):
+        return self._state.get((user_id, place_id, key), default)
+
+    def update(self, key, init_value, update_fun, user_id=None, place_id=None):
+        value = self.read(key, user_id=user_id, place_id=place_id, default=init_value)
+        self.write(key, update_fun(value), user_id=user_id, place_id=place_id)
+
+    def update_all(self, key, init_value, update_fun, user_id, place_id):
+        self.update(key, init_value, update_fun, user_id=user_id)
+        self.update(key, init_value, update_fun, place_id=place_id)
+        self.update(key, init_value, update_fun, user_id=user_id, place_id=place_id)
+
+    def update_both(self, key, init_value, update_fun, user_id, place_id):
+        self.update(key, init_value, update_fun, user_id=user_id)
+        self.update(key, init_value, update_fun, place_id=place_id)
+
+    def write(self, key, value, user_id=None, place_id=None):
+        self._state[user_id, place_id, key] = value
+
+    def write_all(self, key, value, user_id, place_id):
+        self.write(key, value, user_id=user_id)
+        self.write(key, value, place_id=place_id)
+        self.write(key, value, user_id=user_id, place_id=place_id)
+
+    def write_both(self, key, value, user_id, place_id):
+        self.update(key, value, user_id=user_id)
+        self.update(key, value, place_id=place_id)
+
+    def has_answer(self, user_id=None, place_id=None):
+        self.read(InMemoryBasicEnvironment.HAS_ANSWER, user_id=user_id, place_id=place_id)
+
+    def number_of_answers(self, user_id=None, place_id=None):
+        self.read(InMemoryBasicEnvironment.NUMBER_OF_ANSWERS, user_id=user_id, place_id=place_id)
+
+    def number_of_first_answers(self, user_id=None, place_id=None):
+        self.read(
+            InMemoryBasicEnvironment.NUMBER_OF_FIRST_ANSWERS,
+            user_id=user_id,
+            place_id=place_id)
+
+    def rolling_success(self, user_id=None, place_id=None):
+        last_answers = self.read(
+            InMemoryBasicEnvironment.ROLLING_SUCCESS,
+            user_id=user_id,
+            place_id=place_id,
+            default=[0])
+        return sum(last_answers) / float(len(last_answers))
+
+    def _update_rolling_success(self, answers, correctness):
+        if len(answers) == 0:
+            answers = []  # copy
+        if len(answers) == self._rolling_window:
+            answers = answers[1:10]
+        answers.append(correctness)
+        return answers
+
+
 class CommonEnvironment:
 
     __metaclass__ = abc.ABCMeta
@@ -111,6 +215,11 @@ class CommonEnvironment:
 
 
 class InMemoryEnvironment(CommonEnvironment):
+
+    """
+    Obsolete environment class used by the currently used implementation of
+    prior/current model.
+    """
 
     _EMPTY_RECORD = {
         'first_answers_num': 0,
