@@ -12,7 +12,7 @@ setup(
     author_email='jan.papousek@gmail.com',
     namespace_packages = ['proso.geography', 'proso'],
     packages=['proso.geography', 'proso'],
-    install_requires=['numpy==1.8.1'],
+    install_requires=['numpy==1.8.1', 'scikit-learn==0.15.0', 'matplotlib==1.3.1', 'clint==0.3.7'],
     license='Gnu GPL v3',
     url='https://github.com/proso/geography-model-libs/',
 )
