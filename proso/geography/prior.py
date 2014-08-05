@@ -29,11 +29,9 @@ def elo_predict(user_id, place_asked_id, options, question_type, inserted, data)
     return model.predict(current_skills[0], current_skills[1:])
 
 
-def elo_update(answer, environment, data, prediction):
+def elo_update(answer, environment, data, prediction, alpha=1.0, dynamic_alpha=0.05):
     current_skills, difficulties, place_first_answers_nums, prior_skill, user_first_answers_num = data
-    ALPHA = 1.0
-    DYNAMIC_ALPHA = 0.05
-    alpha_fun = lambda n: ALPHA / (1 + DYNAMIC_ALPHA * n)
+    alpha_fun = lambda n: alpha / (1 + dynamic_alpha * n)
     prior_skill_alpha = alpha_fun(user_first_answers_num)
     difficulty_alpha = alpha_fun(place_first_answers_nums[0])
     result = answer['place_asked'] == answer['place_answered']

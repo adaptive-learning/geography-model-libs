@@ -263,6 +263,13 @@ class PriorCurrentModel (PredictiveModel):
 
 class DefaultModel(PriorCurrentModel):
 
+    def __init__(self, elo_alpha=1.0, elo_alpha_dynamic=0.05, pfae_good=3.4, pfae_bad=0.3, time_shift=80.0):
+        self._elo_alpha = elo_alpha
+        self._elo_alpha_dynamic = elo_alpha_dynamic
+        self._pfae_good = pfae_good
+        self._pfae_bad = pfae_bad
+        self._time_shift = time_shift
+
     def prior_prepare(self, user_id, place_asked_id, options, question_type, inserted, env):
         return prior.elo_prepare(user_id, place_asked_id, options, question_type, inserted, env)
 
@@ -270,16 +277,16 @@ class DefaultModel(PriorCurrentModel):
         return prior.elo_predict(user_id, place_asked_id, options, question_type, inserted, data)
 
     def prior_update(self, answer, environment, data, prediction):
-        return prior.elo_update(answer, environment, data, prediction)
+        return prior.elo_update(answer, environment, data, prediction, alpha=self._elo_alpha, dynamic_alpha=self._elo_alpha_dynamic)
 
     def current_prepare(self, user_id, place_asked_id, options, question_type, inserted, env):
         return current.pfa_prepare(user_id, place_asked_id, options, question_type, inserted, env)
 
     def current_predict(self, user_id, place_asked_id, options, question_type, inserted, data):
-        return current.pfa_predict(user_id, place_asked_id, options, question_type, inserted, data)
+        return current.pfa_predict(user_id, place_asked_id, options, question_type, inserted, data, time_shift=self._time_shift)
 
     def current_update(self, answer, environment, data, prediction):
-        return current.pfa_update(answer, environment, data, prediction)
+        return current.pfa_update(answer, environment, data, prediction, k_good=self._pfae_good, k_bad=self._pfae_bad)
 
 
 def predict_simple(skill_asked, number_of_options):
