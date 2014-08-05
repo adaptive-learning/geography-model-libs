@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
 
-VERSION = '1.1.1'
+VERSION = '1.1.2'
 
 
 setup(
