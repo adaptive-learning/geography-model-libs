@@ -117,13 +117,13 @@ class InMemoryBasicEnvironment:
         self.update(key, value, place_id=place_id)
 
     def has_answer(self, user_id=None, place_id=None):
-        self.read(InMemoryBasicEnvironment.HAS_ANSWER, user_id=user_id, place_id=place_id)
+        return self.read(InMemoryBasicEnvironment.HAS_ANSWER, user_id=user_id, place_id=place_id)
 
     def number_of_answers(self, user_id=None, place_id=None):
-        self.read(InMemoryBasicEnvironment.NUMBER_OF_ANSWERS, user_id=user_id, place_id=place_id)
+        return self.read(InMemoryBasicEnvironment.NUMBER_OF_ANSWERS, user_id=user_id, place_id=place_id)
 
     def number_of_first_answers(self, user_id=None, place_id=None):
-        self.read(
+        return self.read(
             InMemoryBasicEnvironment.NUMBER_OF_FIRST_ANSWERS,
             user_id=user_id,
             place_id=place_id)
