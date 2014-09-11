@@ -145,12 +145,13 @@ class AnswerStream:
             answer['inserted'], data)
         self.predictive_model().update(
             answer, env, data, prediction)
-        env.process_answer(
-            answer['user'],
-            answer['place_asked'],
-            answer['place_answered'],
-            answer['response_time'],
-            answer['inserted'])
+        if env is not None:
+            env.process_answer(
+                answer['user'],
+                answer['place_asked'],
+                answer['place_answered'],
+                answer['response_time'],
+                answer['inserted'])
         return prediction
 
     @abc.abstractmethod
