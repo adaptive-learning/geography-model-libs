@@ -22,7 +22,7 @@ install:check
 	python setup.py install
 
 uninstall:
-	pip uninstall --yes proso-geography-model
+	pip uninstall --yes proso-model
 
 check:
 	pep8 --ignore=E501,E225,E123 proso
