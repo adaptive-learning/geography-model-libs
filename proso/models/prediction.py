@@ -199,7 +199,7 @@ class PriorCurrentPredictiveModel(PredictiveModel):
         else:
             seconds_ago = (time - data['last_time']).total_seconds() if data['last_time'] else 315460000
             skill = data['current_skill'] + self._time_shift / max(seconds_ago, 0.001)
-        return _predict_simple(skill, len(kwargs['options']) if 'options' in kwargs else 0)[0]
+        return predict_simple(skill, len(kwargs['options']) if 'options' in kwargs else 0)[0]
 
     def predict_phase_more_items(self, data, user, items, time, **kwargs):
         preds = []
@@ -236,14 +236,14 @@ class PriorCurrentPredictiveModel(PredictiveModel):
                 'difficulty', data['difficulty'] - difficulty_alpha * (result - prediction), item=item, time=time)
 
 
-def _predict_simple(skill_asked, number_of_options):
+def predict_simple(skill_asked, number_of_options):
     guess = 0.0
     if number_of_options:
         guess = 1.0 / number_of_options
     return (guess + (1 - guess) * _sigmoid(skill_asked), [])
 
 
-def _predict(skill_asked, option_skills):
+def predict(skill_asked, option_skills):
     """
     Returns the probability of correct answer.
 
