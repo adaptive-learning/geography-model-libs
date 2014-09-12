@@ -19,7 +19,8 @@ test: check
 reinstall: uninstall install
 
 install:check
-	python setup.py install
+	python setup.py sdist
+	pip install dist/proso-model-*
 
 uninstall:
 	pip uninstall --yes proso-model

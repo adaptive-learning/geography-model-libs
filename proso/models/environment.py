@@ -104,7 +104,6 @@ class CommonEnvironment(Environment):
         pass
 
 
-
 ################################################################################
 # Implementation
 ################################################################################
@@ -136,7 +135,7 @@ class InMemoryEnvironment(CommonEnvironment):
         update_all(self.NUMBER_OF_ANSWERS, 0, increment)
         update_all(self.LAST_ANSWER_TIME, time, lambda x: time)
         self.write(self.LAST_CORRECTNESS, asked == answered, user=user)
-        if asked != answered and answered != None:
+        if asked != answered and answered is not None:
             self.update(self.CONFUSING_FACTOR, 0, increment, item=asked, item_secondary=answered)
             self.update(self.CONFUSING_FACTOR, 0, increment, item=asked, item_secondary=answered, user=user)
 
@@ -357,4 +356,3 @@ class TestCommonEnvironment(TestEnvironment):
         self.assertEqual(1, env.confusing_factor(item=items[0], item_secondary=items[1], user=user_1))
         self.assertEqual(0, env.confusing_factor(item=items[0], item_secondary=items[1], user=user_2))
         self.assertEqual(0, env.confusing_factor(item=items[2], item_secondary=items[3]))
-
