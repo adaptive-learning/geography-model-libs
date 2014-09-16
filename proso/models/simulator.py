@@ -5,17 +5,24 @@ import datetime
 import prediction
 import proso.models.metric
 import pandas
+import numpy
 
 
 class UserKnowledgeProvider:
 
     @abc.abstractmethod
-    def prediction(self, user, item, options=None):
+    def prediction(self, user, item, time, options=None):
         pass
 
     @abc.abstractmethod
     def process_answer(user, item, correct, time, options=None):
         pass
+
+    def user_type(self, user):
+        return 0
+
+    def item_type(self, item):
+        return 0
 
     def reset(self):
         pass
@@ -30,16 +37,35 @@ class ConstantUserKnowledgeProvider(UserKnowledgeProvider):
     def prediction(self, user, item, time, options=None):
         return prediction.predict_simple(self._skill[user] - self._difficulty[item], len(options) if options else 0)[0]
 
+    def user_type(self, user):
+        skill = self._skill[user]
+        percentiles = numpy.percentile(self._skill.values(), [75, 25])
+        if skill > percentiles[0]:
+            return 'High skill'
+        elif skill < percentiles[1]:
+            return 'Low skill'
+        else:
+            return 'Medium skill'
+
+    def item_type(self, item):
+        difficulty = self._difficulty[item]
+        percentiles = numpy.percentile(self._difficulty.values(), [75, 25])
+        if difficulty > percentiles[0]:
+            return 'High difficulty'
+        elif difficulty < percentiles[1]:
+            return 'Low difficulty'
+        else:
+            return 'Medium difficulty'
+
     def process_answer(self, user, item, correct, time, options=None):
         pass
 
 
-class ImprovingUserKnowledgeProvider(UserKnowledgeProvider):
+class ImprovingUserKnowledgeProvider(ConstantUserKnowledgeProvider):
 
     def __init__(self, users, items, time_shift=80.0, learning_good=3.4, learning_bad=0.3):
-        self._skill= dict([(i, random.gauss(0.5, 0.1)) for i in users])
+        ConstantUserKnowledgeProvider.__init__(self, users, items)
         self._current_skill = {}
-        self._difficulty = dict([(i, random.gauss(0.5, 1.5)) for i in items])
         self._time_shift = time_shift
         self._learning_good = learning_good
         self._learning_bad = learning_bad
@@ -61,6 +87,10 @@ class ImprovingUserKnowledgeProvider(UserKnowledgeProvider):
         diff = self._learning_good if correct else self._learning_bad
         self._current_skill[user, item] += diff * (correct - prediction)
         self._last_time[user, item] = time
+
+    def reset(self):
+        self._current_skill = {}
+        self._last_time = {}
 
 class Activity:
 
@@ -138,11 +168,11 @@ class Simulator:
         return answers
 
     @abc.abstractmethod
-    def activity(self, user_ids):
+    def activity(self):
         pass
 
     @abc.abstractmethod
-    def user_knowledge_provider(self, user_ids, place_ids):
+    def user_knowledge_provider(self):
         pass
 
 
@@ -263,10 +293,33 @@ class Evaluator:
             return data.groupby('item').apply(lambda _data: (_data['time'] - _data['time'].shift(1)).mean())
 
         gaps = self._answers.groupby('user').apply(_user_time_gap)
+        if len(gaps) == 0:
+            return float('inf'), float('inf'), float('inf')
         return gaps.mean().item() / 10.0 ** 9, gaps.std().item() / 10.0 ** 9, gaps.min().item() / 10.0 ** 9
 
     def rmse(self):
         return proso.models.metric.rmse(self._answers['correct'], self._answers['estimated'])
+
+    def plot_model_precision(self, environment, prediction_model, ax):
+        data = []
+        time = datetime.datetime(year=2100, month=1, day=1)
+        number_of_answers = self._answers.groupby(['user', 'item']).apply(len).to_dict()
+        success = self._answers.groupby(['user', 'item']).apply(lambda d: d['correct'].sum() / float(len(d))).to_dict()
+        for item in self._simulator.items:
+            for user in self._simulator.users:
+                data.append({
+                    'simulator': self._simulator.user_knowledge_provider().prediction(user, item, time),
+                    'model': prediction_model.predict(environment, user, item, time),
+                    'user_type': self._simulator.user_knowledge_provider().user_type(user),
+                    'item_type': self._simulator.user_knowledge_provider().item_type(item),
+                    'number_of_answers': number_of_answers.get((user, item), 0),
+                    'success': success.get((user, item), None)
+                })
+        data = pandas.DataFrame(data)
+        for group_name, group_data in data.groupby('success'):
+            ax.plot(group_data['simulator'], group_data['model'], '.', color=str(max(0.1, group_name)))
+        ax.set_xlabel('Simulation')
+        ax.set_ylabel('Model')
 
     def print_stats(self, output):
         output.write('Coverage:                    {0:.2f} +/- {1:.2f}\n'.format(*self.average_coverage()))

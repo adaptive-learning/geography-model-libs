@@ -236,6 +236,40 @@ class PriorCurrentPredictiveModel(PredictiveModel):
                 'difficulty', data['difficulty'] - difficulty_alpha * (result - prediction), item=item, time=time)
 
 
+class ShiftedPredictiveModel(PredictiveModel):
+
+    def __init__(self, predictive_model, prediction_shift):
+        self._predictive_model = predictive_model
+        self._prediction_shift = prediction_shift
+
+    def predict_phase_more_items(self, data, user, items, time, **kwargs):
+        return super(ShiftedPredictiveModel, self).predict_phase_more_items(data, user, items, time, **kwargs)
+
+    def prepare_phase(self, environment, user, item, time, **kwargs):
+        return super(ShiftedPredictiveModel, self).prepare_phase(environment, user, item, time, **kwargs)
+
+    def prepare_phase_more_items(self, environment, user, items, time, **kwargs):
+        return super(ShiftedPredictiveModel, self).prepare_phase_more_items(environment, user, items, time, **kwargs)
+
+    def predict(self, environment, user, item, time, **kwargs):
+        return super(ShiftedPredictiveModel, self).predict(environment, user, item, time, **kwargs) + self._prediction_shift
+
+    def predict_phase(self, data, user, item, time, **kwargs):
+        return super(ShiftedPredictiveModel, self).predict_phase(data, user, item, time, **kwargs)
+
+    def update_phase(self, environment, data, prediction, user, item, correct, time, **kwargs):
+        return super(ShiftedPredictiveModel, self).update_phase(
+            environment, data, prediction, user, item, correct, time, **kwargs)
+
+    def predict_and_update(self, environment, user, item, correct, time, **kwargs):
+        return super(ShiftedPredictiveModel, self).predict_and_update(environment, user, item, correct, time, **kwargs)
+
+    def predict_more_items(self, environment, user, items, time, **kwargs):
+        return map(
+            lambda p: min(1.0, max(0.0, p + self._prediction_shift)),
+            super(ShiftedPredictiveModel, self).predict_more_items(environment, user, items, time, **kwargs))
+
+
 def predict_simple(skill_asked, number_of_options):
     guess = 0.0
     if number_of_options:
