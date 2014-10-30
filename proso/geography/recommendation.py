@@ -14,7 +14,7 @@ OPTIONS_NAIVE = 'options_naive'
 TARGET_PROBABILITY = 0.8
 
 
-def by_random(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY):
+def by_random(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY, adjust_target_prob=True):
     if n <= 0:
         return []
     targets = random.choice(place_ids, size=n)
@@ -37,7 +37,7 @@ def by_random(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target
         raise Exception('unknown strategy for generating options:', options_strategy)
 
 
-def by_additive_function(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY):
+def by_additive_function(user_id, place_ids, env, n, options_strategy=OPTIONS_NAIVE, target_probability=TARGET_PROBABILITY, adjust_target_prob=True):
     if n <= 0:
         return []
     WEIGHT_PROBABILITY = 10
@@ -45,9 +45,12 @@ def by_additive_function(user_id, place_ids, env, n, options_strategy=OPTIONS_NA
     WEIGHT_TIME_AGO = 120
 
     user_ids = [user_id for i in place_ids]
-    target_prob = adjust_target_probability(
-        target_probability,
-        env.rolling_success(user_id))
+    if adjust_target_prob:
+        target_prob = adjust_target_probability(
+            target_probability,
+            env.rolling_success(user_id))
+    else:
+        target_prob = target_probability
     LOGGER.debug(
         'recommendation_by_additive_function, user: %s, target_probability %s, requested_target_probability %s',
         str(user_id),
