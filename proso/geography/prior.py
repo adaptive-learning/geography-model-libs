@@ -3,7 +3,7 @@ import model
 
 
 def elo_prepare(answer, env):
-    all_place_ids = [answer['place_asked']] + answer['options']
+    all_place_ids = [answer['place_asked']] + answer['options'] if answer['place_asked'] not in answer['options'] else answer['options']
     user_ids = [answer['user'] for i in all_place_ids]
     [is_not_first] = env.have_answer(
         [answer['user']],
@@ -25,25 +25,27 @@ def elo_prepare(answer, env):
 
 
 def elo_predict(answer, data):
+    asked_index = 0 if answer['place_asked'] not in answer['options'] else answer['options'].index(answer['place_asked'])
     current_skills, difficulties, place_first_answers_nums, prior_skill, user_first_answers_num = data
     if 'number_of_options' in answer and answer['number_of_options'] != len(answer['options']):
         # backward compatibility
-        return model.predict_simple(current_skills[0], answer['number_of_options'])
+        return model.predict_simple(current_skills[asked_index], answer['number_of_options'])
     else:
-        return model.predict(current_skills[0], current_skills[1:])
+        return model.predict(current_skills[asked_index], current_skills[1:])
 
 
 def elo_update(answer, env, data, prediction):
+    asked_index = 0 if answer['place_asked'] not in answer['options'] else answer['options'].index(answer['place_asked'])
     current_skills, difficulties, place_first_answers_nums, prior_skill, user_first_answers_num = data
     ALPHA = 1.0
     DYNAMIC_ALPHA = 0.05
     alpha_fun = lambda n: ALPHA / (1 + DYNAMIC_ALPHA * n)
     prior_skill_alpha = alpha_fun(user_first_answers_num)
-    difficulty_alpha = alpha_fun(place_first_answers_nums[0])
+    difficulty_alpha = alpha_fun(place_first_answers_nums[asked_index])
     result = answer['place_asked'] == answer['place_answered']
     env.prior_skill(
         answer['user'],
         prior_skill + prior_skill_alpha * (result - prediction[0]))
     env.difficulty(
         answer['place_asked'],
-        difficulties[0] - difficulty_alpha * (result - prediction[0]))
+        difficulties[asked_index] - difficulty_alpha * (result - prediction[0]))

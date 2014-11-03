@@ -5,7 +5,7 @@ TIME_SHIFT = 80.0
 
 
 def pfa_prepare(answer, env):
-    all_place_ids = [answer['place_asked']] + answer['options']
+    all_place_ids = [answer['place_asked']] + answer['options'] if answer['place_asked'] not in answer['options'] else answer['options']
     user_ids = [answer['user'] for i in all_place_ids]
     current_skills = env.current_skills(
         user_ids,
@@ -18,6 +18,7 @@ def pfa_prepare(answer, env):
 
 
 def pfa_predict(answer, data):
+    asked_index = 0 if answer['place_asked'] not in answer['options'] else answer['options'].index(answer['place_asked'])
     current_skills, last_times = data
     seconds_ago = map(
         lambda x: (answer['inserted'] - x).total_seconds() if x is not None else 315360000,
@@ -27,21 +28,22 @@ def pfa_predict(answer, data):
         zip(current_skills, seconds_ago))
     if 'number_of_options' in answer and answer['number_of_options'] != len(answer['options']):
         # backward compatibility
-        return model.predict_simple(current_skills[0], answer['number_of_options'])
+        return model.predict_simple(current_skills[asked_index], answer['number_of_options'])
     else:
-        return model.predict(current_skills[0], current_skills[1:])
-    return model.predict(current_skills[0], current_skills[1:0])
+        return model.predict(current_skills[asked_index], current_skills[1:])
+    return model.predict(current_skills[asked_index], current_skills[1:0])
 
 
 def pfa_update(answer, env, data, prediction):
+    asked_index = 0 if answer['place_asked'] not in answer['options'] else answer['options'].index(answer['place_asked'])
     current_skills, last_times = data
     K_GOOD = 3.4
     K_BAD = 0.3
     result = answer['place_asked'] == answer['place_answered']
     if result:
-        current_skill = current_skills[0] + K_GOOD * (result - prediction[0])
+        current_skill = current_skills[asked_index] + K_GOOD * (result - prediction[0])
     else:
-        current_skill = current_skills[0] + K_BAD * (result - prediction[0])
+        current_skill = current_skills[asked_index] + K_BAD * (result - prediction[0])
     env.current_skill(
         answer['user'],
         answer['place_asked'],
